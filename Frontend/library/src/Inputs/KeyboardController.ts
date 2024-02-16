@@ -6,6 +6,7 @@ import { ActiveKeys } from './InputClassesFactory';
 import { StreamMessageController } from '../UeInstanceMessage/StreamMessageController';
 import { Config, Flags } from '../Config/Config';
 import { EventListenerTracker } from '../Util/EventListenerTracker';
+import { VideoPlayer } from '../VideoPlayer/VideoPlayer';
 
 interface ICodeToKeyCode {
     [key: string]: number;
@@ -18,6 +19,7 @@ export class KeyboardController {
     toStreamerMessagesProvider: StreamMessageController;
     activeKeysProvider: ActiveKeys;
     config: Config;
+    videoElementProvider: VideoPlayer;
 
     // Utility for keeping track of event handlers and unregistering them
     private keyboardEventListenerTracker = new EventListenerTracker();
@@ -139,11 +141,13 @@ export class KeyboardController {
     constructor(
         toStreamerMessagesProvider: StreamMessageController,
         config: Config,
-        activeKeysProvider: ActiveKeys
+        activeKeysProvider: ActiveKeys,
+        videoElementProvider: VideoPlayer
     ) {
         this.toStreamerMessagesProvider = toStreamerMessagesProvider;
         this.config = config;
         this.activeKeysProvider = activeKeysProvider;
+        this.videoElementProvider = videoElementProvider;
     }
 
     /**
@@ -154,25 +158,28 @@ export class KeyboardController {
         const keyDownHandler = (ev: KeyboardEvent) => this.handleOnKeyDown(ev);
         const keyUpHandler = (ev: KeyboardEvent) => this.handleOnKeyUp(ev);
         const keyPressHandler = (ev: KeyboardEvent) => this.handleOnKeyPress(ev);
+        const videoElementParent =
+        this.videoElementProvider.getVideoParentElement() as HTMLDivElement;
 
-        document.addEventListener("compositionend", compositionEndHandler);
-        document.addEventListener("keydown", keyDownHandler);
-        document.addEventListener("keyup", keyUpHandler);
+
+        videoElementParent.addEventListener("compositionend", compositionEndHandler);
+        videoElementParent.addEventListener("keydown", keyDownHandler);
+        videoElementParent.addEventListener("keyup", keyUpHandler);
 
         //This has been deprecated as at Jun 13 2021
-        document.addEventListener("keypress", keyPressHandler);
+        videoElementParent.addEventListener("keypress", keyPressHandler);
 
         this.keyboardEventListenerTracker.addUnregisterCallback(
-            () => document.removeEventListener("compositionend", compositionEndHandler)
+            () => videoElementParent.removeEventListener("compositionend", compositionEndHandler)
         );
         this.keyboardEventListenerTracker.addUnregisterCallback(
-            () => document.removeEventListener("keydown", keyDownHandler)
+            () => videoElementParent.removeEventListener("keydown", keyDownHandler)
         );
         this.keyboardEventListenerTracker.addUnregisterCallback(
-            () => document.removeEventListener("keyup", keyUpHandler)
+            () => videoElementParent.removeEventListener("keyup", keyUpHandler)
         );
         this.keyboardEventListenerTracker.addUnregisterCallback(
-            () => document.removeEventListener("keypress", keyPressHandler)
+            () => videoElementParent.removeEventListener("keypress", keyPressHandler)
         );
     }
 
@@ -189,6 +196,8 @@ export class KeyboardController {
      */
     handleOnKeyDown(keyboardEvent: KeyboardEvent) {
         const keyCode = this.getKeycode(keyboardEvent);
+        const videoElementParent =
+        this.videoElementProvider.getVideoParentElement() as HTMLDivElement;
         if (!keyCode || keyCode === 229) {
             return;
         }
@@ -209,7 +218,7 @@ export class KeyboardController {
         // Backspace is not considered a keypress in JavaScript but we need it
         // to be so characters may be deleted in a UE text entry field.
         if (keyCode === SpecialKeyCodes.backSpace) {
-            document.dispatchEvent(
+            videoElementParent.dispatchEvent(
                 new KeyboardEvent('keypress', {
                     charCode: SpecialKeyCodes.backSpace
                 })

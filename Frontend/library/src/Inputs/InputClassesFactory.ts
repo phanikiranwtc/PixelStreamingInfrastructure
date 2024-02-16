@@ -43,7 +43,8 @@ export class InputClassesFactory {
         const keyboardController = new KeyboardController(
             this.toStreamerMessagesProvider,
             config,
-            this.activeKeys
+            this.activeKeys,
+            this.videoElementProvider
         );
         keyboardController.registerKeyBoardEvents();
         return keyboardController;
